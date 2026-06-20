@@ -184,9 +184,8 @@
             </div>
             <div class="field">
               <label for="main_profile">Investor Profile</label>
-              <select id="main_profile" name="investor_profile" required>
-                <option value="" selected disabled>Select profile</option>
-                <option value="Beginner">Beginner</option>
+              <select id="main_profile" name="investor_profile">
+                <option value="Beginner" selected>Beginner</option>
                 <option value="Intermediate">Intermediate</option>
                 <option value="Advanced">Advanced</option>
               </select>
@@ -309,120 +308,225 @@
 
     function openPopup(id){
       const popup = document.getElementById(id);
-      if(popup){ popup.classList.add("open"); popup.setAttribute("aria-hidden","false"); }
+      if(popup){
+        popup.classList.add("open");
+        popup.setAttribute("aria-hidden","false");
+      }
     }
+
     function closePopup(id){
       const popup = document.getElementById(id);
-      if(popup){ popup.classList.remove("open"); popup.setAttribute("aria-hidden","true"); }
+      if(popup){
+        popup.classList.remove("open");
+        popup.setAttribute("aria-hidden","true");
+      }
     }
+
     document.querySelectorAll("[data-close-popup]").forEach(function(btn){
-      btn.addEventListener("click", function(){ closePopup(btn.getAttribute("data-close-popup")); });
+      btn.addEventListener("click", function(){
+        closePopup(btn.getAttribute("data-close-popup"));
+      });
     });
+
     document.querySelectorAll(".popup").forEach(function(popup){
-      popup.addEventListener("click", function(e){ if(e.target === popup) closePopup(popup.id); });
+      popup.addEventListener("click", function(e){
+        if(e.target === popup) closePopup(popup.id);
+      });
     });
-    setTimeout(function(){ openPopup("leadPopup"); }, 900);
+
+    setTimeout(function(){
+      openPopup("leadPopup");
+    }, 900);
 
     function getUtm(name){
       return new URLSearchParams(window.location.search).get(name) || "";
     }
-    function firstValue(form, selectors){
+
+    function getValue(form, selectors){
       for(const selector of selectors){
         const field = form.querySelector(selector);
-        if(field && field.value && String(field.value).trim() !== "") return String(field.value).trim();
+        if(field && field.value !== undefined && String(field.value).trim() !== ""){
+          return String(field.value).trim();
+        }
       }
       return "";
     }
+
     function buildPayload(form){
       const payload = new URLSearchParams();
+
+      const name = getValue(form, [
+        'input[name="name"]',
+        'input[autocomplete="name"]',
+        'input[type="text"]'
+      ]);
+
+      const email = getValue(form, [
+        'input[name="email"]',
+        'input[type="email"]'
+      ]);
+
+      const phone = getValue(form, [
+        'input[name="phone"]',
+        'input[type="tel"]'
+      ]);
+
+      const investorProfile = getValue(form, [
+        'select[name="investor_profile"]',
+        'select'
+      ]) || "Not provided";
+
       payload.append("form_source", form.getAttribute("data-form-source") || "Website Form");
-      payload.append("name", firstValue(form, ['input[name="name"]', 'input[autocomplete="name"]', 'input[type="text"]']));
-      payload.append("email", firstValue(form, ['input[name="email"]', 'input[type="email"]']));
-      payload.append("phone", firstValue(form, ['input[name="phone"]', 'input[type="tel"]']));
-      payload.append("investor_profile", firstValue(form, ['select[name="investor_profile"]', 'select']));
+      payload.append("name", name);
+      payload.append("email", email);
+      payload.append("phone", phone);
+      payload.append("investor_profile", investorProfile);
+
       payload.append("page_name", "Brain Trade");
       payload.append("page_url", window.location.href);
+
       payload.append("utm_source", getUtm("utm_source"));
       payload.append("utm_medium", getUtm("utm_medium"));
       payload.append("utm_campaign", getUtm("utm_campaign"));
       payload.append("utm_term", getUtm("utm_term"));
       payload.append("utm_content", getUtm("utm_content"));
+
       payload.append("consent_text", CONSENT_TEXT);
       payload.append("user_agent", navigator.userAgent);
+
       return payload;
     }
+
     function showMessage(form){
       const msg = form.querySelector(".form-message");
-      if(msg){ msg.style.display = "block"; }
+      if(msg){
+        msg.style.display = "block";
+      }
+
       closePopup("leadPopup");
       openPopup("thankPopup");
     }
+
     async function submitLead(form){
       const button = form.querySelector('button[type="submit"],input[type="submit"]');
       const oldText = button ? (button.textContent || button.value || "Register") : "Register";
-      if(button){ button.disabled = true; button.textContent = "Submitting..."; }
+
+      const name = getValue(form, ['input[name="name"]','input[autocomplete="name"]','input[type="text"]']);
+      const email = getValue(form, ['input[name="email"]','input[type="email"]']);
+      const phone = getValue(form, ['input[name="phone"]','input[type="tel"]']);
+
+      if(!name || !email || !phone){
+        alert("Please enter your name, email, and phone number.");
+        return;
+      }
+
+      if(button){
+        button.disabled = true;
+        button.textContent = "Submitting...";
+      }
+
       try{
         await fetch(GOOGLE_SCRIPT_WEB_APP_URL, {
-          method:"POST",
-          mode:"no-cors",
-          body: buildPayload(form)
+          method: "POST",
+          mode: "no-cors",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"
+          },
+          body: buildPayload(form).toString()
         });
+
+        console.log("Brain Trade lead submitted:", form.getAttribute("data-form-source") || "Website Form");
         showMessage(form);
         form.reset();
+
+        const profile = form.querySelector('select[name="investor_profile"]');
+        if(profile){
+          profile.value = "Beginner";
+        }
       }catch(error){
         console.log("Lead submit error", error);
         alert("There was a connection issue. Please try again.");
       }finally{
-        if(button){ button.disabled = false; button.textContent = oldText; }
+        if(button){
+          button.disabled = false;
+          button.textContent = oldText;
+        }
       }
     }
-    document.querySelectorAll("form.lead-form").forEach(function(form){
-      form.addEventListener("submit", function(e){
-        e.preventDefault();
-        submitLead(form);
-      });
-    });
+
+    // This delegated submit listener handles both popup and hero forms.
+    // It is more reliable than attaching listeners one by one.
+    document.addEventListener("submit", function(e){
+      const form = e.target;
+
+      if(!form || !form.classList || !form.classList.contains("lead-form")){
+        return;
+      }
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      submitLead(form);
+    }, true);
 
     function loadTradingView(){
       const placeholder = document.getElementById("chartPlaceholder");
       const chart = document.getElementById("tradingview-chart");
       const btn = document.getElementById("loadChartBtn");
+
       if(!chart) return;
+
       if(btn) btn.textContent = "Loading...";
       if(placeholder) placeholder.style.display = "none";
+
       chart.style.display = "block";
-      if(window.TradingView){ createTradingViewWidget(); return; }
+
+      if(window.TradingView){
+        createTradingViewWidget();
+        return;
+      }
+
       const script = document.createElement("script");
       script.src = "https://s3.tradingview.com/tv.js";
       script.async = true;
       script.onload = createTradingViewWidget;
       script.onerror = function(){
         if(btn) btn.textContent = "Try again";
-        if(placeholder){ placeholder.style.display = "block"; placeholder.textContent = "The chart could not load here. The registration form still works."; }
+        if(placeholder){
+          placeholder.style.display = "block";
+          placeholder.textContent = "The chart could not load here. The registration form still works.";
+        }
         chart.style.display = "none";
       };
+
       document.body.appendChild(script);
     }
+
     function createTradingViewWidget(){
       const btn = document.getElementById("loadChartBtn");
       if(btn) btn.textContent = "Live graph loaded";
+
       if(!window.TradingView) return;
+
       new TradingView.widget({
-        autosize:true,
-        symbol:"NASDAQ:SPCX",
-        interval:"D",
-        timezone:"Etc/UTC",
-        theme:"light",
-        style:"1",
-        locale:"en",
-        toolbar_bg:"#ffffff",
-        enable_publishing:false,
-        allow_symbol_change:true,
-        container_id:"tradingview-chart"
+        autosize: true,
+        symbol: "NASDAQ:SPCX",
+        interval: "D",
+        timezone: "Etc/UTC",
+        theme: "light",
+        style: "1",
+        locale: "en",
+        toolbar_bg: "#ffffff",
+        enable_publishing: false,
+        allow_symbol_change: true,
+        container_id: "tradingview-chart"
       });
     }
+
     const loadChartBtn = document.getElementById("loadChartBtn");
-    if(loadChartBtn) loadChartBtn.addEventListener("click", loadTradingView);
+    if(loadChartBtn){
+      loadChartBtn.addEventListener("click", loadTradingView);
+    }
   </script>
 </body>
 </html>
