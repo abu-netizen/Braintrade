@@ -553,11 +553,14 @@
 
       try {
         if (WEBHOOK_URL && WEBHOOK_URL.startsWith('https://script.google.com/macros/s/')) {
+          // Send as URL-encoded form data so Google Apps Script receives values in e.parameter.
+          // This is more reliable for Apps Script Web Apps than JSON when using no-cors.
+          const formBody = new URLSearchParams(payload).toString();
           await fetch(WEBHOOK_URL, {
             method: 'POST',
             mode: 'no-cors',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify(payload)
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+            body: formBody
           });
         }
       } catch (error) {
