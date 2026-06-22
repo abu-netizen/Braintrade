@@ -455,35 +455,30 @@
 
     function postToGoogleScript(payload){
       return new Promise(function(resolve){
-        const iframeName = "lead_submit_iframe_" + Date.now();
+        // Google Apps Script can silently fail with no-cors POST on some hosts.
+        // This uses doGet with query parameters, which is the most reliable method
+        // for simple lead capture from static landing pages.
+        payload.append("submit_method", "image_get");
+        payload.append("cache_bust", Date.now().toString());
 
-        const iframe = document.createElement("iframe");
-        iframe.name = iframeName;
-        iframe.style.display = "none";
-        document.body.appendChild(iframe);
+        const img = new Image();
+        img.style.display = "none";
 
-        const postForm = document.createElement("form");
-        postForm.method = "POST";
-        postForm.action = GOOGLE_SCRIPT_WEB_APP_URL;
-        postForm.target = iframeName;
-        postForm.style.display = "none";
-
-        payload.forEach(function(value, key){
-          const input = document.createElement("input");
-          input.type = "hidden";
-          input.name = key;
-          input.value = value;
-          postForm.appendChild(input);
-        });
-
-        document.body.appendChild(postForm);
-        postForm.submit();
-
-        setTimeout(function(){
-          postForm.remove();
-          iframe.remove();
+        const done = function(){
+          if(img && img.parentNode){
+            img.parentNode.removeChild(img);
+          }
           resolve();
-        }, 1200);
+        };
+
+        img.onload = done;
+        img.onerror = done;
+        img.src = GOOGLE_SCRIPT_WEB_APP_URL + "?" + payload.toString();
+
+        document.body.appendChild(img);
+
+        // Resolve even if the browser does not fire image events for the text response.
+        setTimeout(done, 1800);
       });
     }
 
