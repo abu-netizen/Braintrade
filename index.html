@@ -303,7 +303,7 @@
   <div class="mobile-bar"><a class="btn full" href="#register">Register</a></div>
 
   <script>
-    const GOOGLE_SCRIPT_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwMdHSfkACXxnhFeMUC0HgAecILFsUxPEw0nobSJ4Kpik2L_iC_TYvWGF2SvTKLPwTj9g/exec";
+    const GOOGLE_SCRIPT_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx3_GTUXtgs7Rw6iklqbcfWjtZGnHsGlSPnB8QlF-i4dyXh4XTEKBr_uLGjwcW0xk48/exec";
     const TARGET_SHEET_NAME = "Canada";
     const DEFAULT_COUNTRY = "Canada";
     const DEFAULT_MOBILE_CODE = "+1";
@@ -453,33 +453,44 @@
       openPopup("thankPopup");
     }
 
-    function postToGoogleScript(payload){
-      return new Promise(function(resolve){
-        // Google Apps Script can silently fail with no-cors POST on some hosts.
-        // This uses doGet with query parameters, which is the most reliable method
-        // for simple lead capture from static landing pages.
-        payload.append("submit_method", "image_get");
-        payload.append("cache_bust", Date.now().toString());
+    async function postToGoogleScript(payload){
+      payload.append("submit_method", "fetch_get");
+      payload.append("cache_bust", Date.now().toString());
 
-        const img = new Image();
-        img.style.display = "none";
+      const requestUrl = GOOGLE_SCRIPT_WEB_APP_URL + "?" + payload.toString();
 
-        const done = function(){
-          if(img && img.parentNode){
-            img.parentNode.removeChild(img);
-          }
-          resolve();
-        };
+      try{
+        await fetch(requestUrl, {
+          method: "GET",
+          mode: "no-cors",
+          cache: "no-store"
+        });
 
-        img.onload = done;
-        img.onerror = done;
-        img.src = GOOGLE_SCRIPT_WEB_APP_URL + "?" + payload.toString();
+        return true;
+      }catch(error){
+        console.error("Google Script submit failed", error);
 
-        document.body.appendChild(img);
+        // Fallback for hosts/browsers that block fetch to Apps Script.
+        await new Promise(function(resolve){
+          const img = new Image();
+          img.style.display = "none";
 
-        // Resolve even if the browser does not fire image events for the text response.
-        setTimeout(done, 1800);
-      });
+          const done = function(){
+            if(img && img.parentNode){
+              img.parentNode.removeChild(img);
+            }
+            resolve();
+          };
+
+          img.onload = done;
+          img.onerror = done;
+          img.src = requestUrl;
+          document.body.appendChild(img);
+          setTimeout(done, 1800);
+        });
+
+        return true;
+      }
     }
 
     async function submitLead(form){
