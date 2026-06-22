@@ -453,6 +453,40 @@
       openPopup("thankPopup");
     }
 
+    function postToGoogleScript(payload){
+      return new Promise(function(resolve){
+        const iframeName = "lead_submit_iframe_" + Date.now();
+
+        const iframe = document.createElement("iframe");
+        iframe.name = iframeName;
+        iframe.style.display = "none";
+        document.body.appendChild(iframe);
+
+        const postForm = document.createElement("form");
+        postForm.method = "POST";
+        postForm.action = GOOGLE_SCRIPT_WEB_APP_URL;
+        postForm.target = iframeName;
+        postForm.style.display = "none";
+
+        payload.forEach(function(value, key){
+          const input = document.createElement("input");
+          input.type = "hidden";
+          input.name = key;
+          input.value = value;
+          postForm.appendChild(input);
+        });
+
+        document.body.appendChild(postForm);
+        postForm.submit();
+
+        setTimeout(function(){
+          postForm.remove();
+          iframe.remove();
+          resolve();
+        }, 1200);
+      });
+    }
+
     async function submitLead(form){
       const button = form.querySelector('button[type="submit"],input[type="submit"]');
       const oldText = button ? (button.textContent || button.value || "Register") : "Register";
@@ -461,7 +495,7 @@
       const email = getValue(form, ['input[name="email"]','input[type="email"]']);
       const phone = getValue(form, ['input[name="phone"]','input[type="tel"]']);
 
-      if(!name || !email || !phone){
+      if(!name || !email || !phone || phone.trim() === DEFAULT_MOBILE_CODE){
         alert("Please enter your name, email, and phone number.");
         return;
       }
@@ -472,14 +506,8 @@
       }
 
       try{
-        await fetch(GOOGLE_SCRIPT_WEB_APP_URL, {
-          method: "POST",
-          mode: "no-cors",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"
-          },
-          body: buildPayload(form).toString()
-        });
+        const payload = buildPayload(form);
+        await postToGoogleScript(payload);
 
         console.log("Brain Trade lead submitted:", form.getAttribute("data-form-source") || "Website Form");
         showMessage(form);
