@@ -180,7 +180,7 @@
             </div>
             <div class="field">
               <label for="main_phone">Phone</label>
-              <input id="main_phone" name="phone" type="tel" placeholder="Your phone number" autocomplete="tel" required>
+              <input id="main_phone" name="phone" type="tel" value="+1 " placeholder="+1 phone number" autocomplete="tel" required>
             </div>
             <div class="field">
               <label for="main_profile">Investor Profile</label>
@@ -281,7 +281,7 @@
           </div>
           <div class="field">
             <label for="pop_phone">Phone</label>
-            <input id="pop_phone" name="phone" type="tel" placeholder="Your phone number" autocomplete="tel" required>
+            <input id="pop_phone" name="phone" type="tel" value="+1 " placeholder="+1 phone number" autocomplete="tel" required>
           </div>
           <p class="fine">Your contact information will be used by Brain Trade to contact you regarding your enquiry and registration.</p>
           <div class="form-message">Thank you. Your information has been received.</div>
@@ -303,7 +303,10 @@
   <div class="mobile-bar"><a class="btn full" href="#register">Register</a></div>
 
   <script>
-    const GOOGLE_SCRIPT_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwDQ0PBRzzRj6qR5Pn-Q6bjaoODCz3nxeKHX3Stnxp5Cz4YEF1ZybjfGtO7EY5nXuznVw/exec";
+    const GOOGLE_SCRIPT_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzJoJism1Nre-kUcEquja4I3BqPX3i5zU7rWwzLChoFl6jaFaGexi58rCp4150HmFWX/exec";
+    const TARGET_SHEET_NAME = "Canada";
+    const DEFAULT_COUNTRY = "Canada";
+    const DEFAULT_MOBILE_CODE = "+1";
     const CONSENT_TEXT = "Your contact information will be used by Brain Trade to contact you regarding your enquiry and registration.";
 
     function openPopup(id){
@@ -352,6 +355,46 @@
       return "";
     }
 
+    function normalizeCanadaPhone(phone){
+      const rawPhone = String(phone || "").trim();
+      if(!rawPhone) return DEFAULT_MOBILE_CODE + " ";
+      if(rawPhone === DEFAULT_MOBILE_CODE) return DEFAULT_MOBILE_CODE + " ";
+      if(rawPhone.startsWith(DEFAULT_MOBILE_CODE)) return rawPhone;
+
+      const digits = rawPhone.replace(/\D/g, "");
+
+      if(digits.length === 11 && digits.startsWith("1")){
+        return "+" + digits;
+      }
+
+      if(digits.length === 10){
+        return DEFAULT_MOBILE_CODE + " " + digits;
+      }
+
+      return DEFAULT_MOBILE_CODE + " " + rawPhone.replace(/^\+?1\s*/, "");
+    }
+
+    function applyDefaultCanadaMobileCode(scope){
+      const root = scope || document;
+      root.querySelectorAll('input[name="phone"], input[type="tel"]').forEach(function(field){
+        if(!String(field.value || "").trim()){
+          field.value = DEFAULT_MOBILE_CODE + " ";
+        }
+
+        field.addEventListener("focus", function(){
+          if(!String(field.value || "").trim()){
+            field.value = DEFAULT_MOBILE_CODE + " ";
+          }
+        });
+
+        field.addEventListener("blur", function(){
+          field.value = normalizeCanadaPhone(field.value);
+        });
+      });
+    }
+
+    applyDefaultCanadaMobileCode(document);
+
     function buildPayload(form){
       const payload = new URLSearchParams();
 
@@ -379,7 +422,10 @@
       payload.append("form_source", form.getAttribute("data-form-source") || "Website Form");
       payload.append("name", name);
       payload.append("email", email);
-      payload.append("phone", phone);
+      payload.append("phone", normalizeCanadaPhone(phone));
+      payload.append("mobile_code", DEFAULT_MOBILE_CODE);
+      payload.append("country", DEFAULT_COUNTRY);
+      payload.append("sheet_name", TARGET_SHEET_NAME);
       payload.append("investor_profile", investorProfile);
 
       payload.append("page_name", "Brain Trade");
@@ -438,6 +484,7 @@
         console.log("Brain Trade lead submitted:", form.getAttribute("data-form-source") || "Website Form");
         showMessage(form);
         form.reset();
+        applyDefaultCanadaMobileCode(form);
 
         const profile = form.querySelector('select[name="investor_profile"]');
         if(profile){
