@@ -672,7 +672,7 @@
                   <option value="1" selected>+1 Canada/US</option>
                 </select>
 
-                <input name="phone" type="tel" placeholder="Phone number only" autocomplete="tel" inputmode="numeric" required>
+                <input name="phone" type="tel" placeholder="10-digit phone number" autocomplete="tel" inputmode="numeric" maxlength="10" pattern="[0-9]{10}" required>
               </div>
             </div>
 
@@ -834,7 +834,7 @@
                 <option value="1" selected>+1 Canada/US</option>
               </select>
 
-              <input name="phone" type="tel" placeholder="Phone number only" autocomplete="tel" inputmode="numeric" required>
+              <input name="phone" type="tel" placeholder="10-digit phone number" autocomplete="tel" inputmode="numeric" maxlength="10" pattern="[0-9]{10}" required>
             </div>
           </div>
 
@@ -1063,8 +1063,8 @@
         return;
       }
 
-      if(phoneDigits.length < 7){
-        alert("Please enter a valid phone number.");
+      if(phoneDigits.length !== 10){
+        alert("Please enter a valid 10-digit Canada/US phone number.");
         return;
       }
 
