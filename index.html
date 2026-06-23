@@ -1002,11 +1002,12 @@
           return;
         }
 
-        payload.append("submit_method", "image_get");
+        payload.append("submit_method", "fetch_get");
         payload.append("cache_bust", Date.now().toString());
 
-        const img = new Image();
-        img.style.display = "none";
+        const submitUrl = GOOGLE_SCRIPT_WEB_APP_URL + "?" + payload.toString();
+
+        console.log("Brain Trade submitting lead to:", submitUrl);
 
         let finished = false;
 
@@ -1016,21 +1017,51 @@
           }
 
           finished = true;
-
-          if(img && img.parentNode){
-            img.parentNode.removeChild(img);
-          }
-
           resolve();
         };
 
-        img.onload = done;
-        img.onerror = done;
-        img.src = GOOGLE_SCRIPT_WEB_APP_URL + "?" + payload.toString();
+        const fallbackIframe = function(){
+          const frame = document.createElement("iframe");
+          frame.style.display = "none";
+          frame.src = submitUrl;
 
-        document.body.appendChild(img);
+          frame.onload = function(){
+            setTimeout(function(){
+              if(frame && frame.parentNode){
+                frame.parentNode.removeChild(frame);
+              }
 
-        setTimeout(done, 2200);
+              done();
+            }, 800);
+          };
+
+          document.body.appendChild(frame);
+
+          setTimeout(function(){
+            if(frame && frame.parentNode){
+              frame.parentNode.removeChild(frame);
+            }
+
+            done();
+          }, 3000);
+        };
+
+        if(window.fetch){
+          fetch(submitUrl, {
+            method: "GET",
+            mode: "no-cors",
+            cache: "no-store",
+            keepalive: true
+          }).then(function(){
+            setTimeout(done, 1200);
+          }).catch(function(){
+            fallbackIframe();
+          });
+
+          setTimeout(done, 3500);
+        }else{
+          fallbackIframe();
+        }
       });
     }
 
