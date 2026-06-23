@@ -870,7 +870,7 @@
   </div>
 
   <script>
-    const GOOGLE_SCRIPT_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwvpB7TyaJKbzantKuITTPHOLjC2Y9LXF7_k329xhsugvsDGKlFtome-GwV4MoJrsrh/exec";
+    const GOOGLE_SCRIPT_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzOYplobne64FnxmVUwnw0-5Tk16rhAare5695bmwXPfI2aUsKg3Jt7NOV1ATpG6Afd7g/exec";
     const TARGET_SHEET_NAME = "";
     const DEFAULT_COUNTRY = "Canada";
     const CONSENT_TEXT = "Your contact information will be used by Brain Trade to contact you regarding your enquiry and registration.";
@@ -962,8 +962,6 @@
       payload.append("name", name);
       payload.append("email", email);
 
-      // Phone and mobile code are sent separately.
-      // Phone has no +1 inside it.
       payload.append("phone", phoneDigits);
       payload.append("mobile_code", mobileCodeDigits);
 
