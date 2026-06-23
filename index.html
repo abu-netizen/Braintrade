@@ -591,6 +591,7 @@
 </head>
 
 <body>
+  <iframe name="leadNativeFrame" id="leadNativeFrame" style="display:none;width:0;height:0;border:0"></iframe>
   <nav class="nav">
     <div class="wrap nav-inner">
       <a class="brand" href="#top">
@@ -1002,12 +1003,25 @@
           return;
         }
 
-        payload.append("submit_method", "fetch_get");
+        payload.append("submit_method", "native_iframe_get");
         payload.append("cache_bust", Date.now().toString());
 
         const submitUrl = GOOGLE_SCRIPT_WEB_APP_URL + "?" + payload.toString();
 
         console.log("Brain Trade submitting lead to:", submitUrl);
+
+        let frame = document.getElementById("leadNativeFrame");
+
+        if(!frame){
+          frame = document.createElement("iframe");
+          frame.name = "leadNativeFrame";
+          frame.id = "leadNativeFrame";
+          frame.style.display = "none";
+          frame.style.width = "0";
+          frame.style.height = "0";
+          frame.style.border = "0";
+          document.body.appendChild(frame);
+        }
 
         let finished = false;
 
@@ -1020,48 +1034,13 @@
           resolve();
         };
 
-        const fallbackIframe = function(){
-          const frame = document.createElement("iframe");
-          frame.style.display = "none";
-          frame.src = submitUrl;
-
-          frame.onload = function(){
-            setTimeout(function(){
-              if(frame && frame.parentNode){
-                frame.parentNode.removeChild(frame);
-              }
-
-              done();
-            }, 800);
-          };
-
-          document.body.appendChild(frame);
-
-          setTimeout(function(){
-            if(frame && frame.parentNode){
-              frame.parentNode.removeChild(frame);
-            }
-
-            done();
-          }, 3000);
+        frame.onload = function(){
+          setTimeout(done, 1200);
         };
 
-        if(window.fetch){
-          fetch(submitUrl, {
-            method: "GET",
-            mode: "no-cors",
-            cache: "no-store",
-            keepalive: true
-          }).then(function(){
-            setTimeout(done, 1200);
-          }).catch(function(){
-            fallbackIframe();
-          });
+        frame.src = submitUrl;
 
-          setTimeout(done, 3500);
-        }else{
-          fallbackIframe();
-        }
+        setTimeout(done, 4200);
       });
     }
 
