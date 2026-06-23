@@ -297,7 +297,7 @@
 
     .phone-row{
       display:grid;
-      grid-template-columns:110px 1fr;
+      grid-template-columns:130px 1fr;
       gap:10px;
     }
 
@@ -763,7 +763,7 @@
           <div class="list">
             <div class="item">
               <span class="check">✓</span>
-              <span>Submit your name, email, phone number, and investor profile.</span>
+              <span>Submit your name, email, mobile code, phone number, and investor profile.</span>
             </div>
 
             <div class="item">
@@ -800,7 +800,7 @@
 
           <details>
             <summary>What information do I need to submit?</summary>
-            <p>The form only asks for your name, email, phone number, and investor profile level.</p>
+            <p>The form asks for your name, email, mobile code, phone number, and investor profile level.</p>
           </details>
         </div>
       </div>
@@ -971,10 +971,8 @@
       payload.append("name", name);
       payload.append("email", email);
 
-      // Phone number only. No + sign goes to Google Sheets.
+      // Important: no + sign is sent to the sheet.
       payload.append("phone", phoneDigits);
-
-      // Mobile code only. No + sign goes to Google Sheets.
       payload.append("mobile_code", mobileCodeDigits);
 
       payload.append("country", DEFAULT_COUNTRY);
@@ -1071,7 +1069,7 @@
       ])) || "1";
 
       if(!name || !email || !phoneDigits || !mobileCodeDigits){
-        alert("Please enter your name, email, country code, and phone number.");
+        alert("Please enter your name, email, mobile code, and phone number.");
         return;
       }
 
