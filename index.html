@@ -22,7 +22,6 @@
     }
 
     *{box-sizing:border-box}
-
     html{scroll-behavior:smooth}
 
     body{
@@ -297,7 +296,7 @@
 
     .phone-row{
       display:grid;
-      grid-template-columns:130px 1fr;
+      grid-template-columns:135px 1fr;
       gap:10px;
     }
 
@@ -671,10 +670,6 @@
               <div class="phone-row">
                 <select name="mobile_code" required>
                   <option value="1" selected>+1 Canada/US</option>
-                  <option value="44">+44 UK</option>
-                  <option value="91">+91 India</option>
-                  <option value="971">+971 UAE</option>
-                  <option value="61">+61 Australia</option>
                 </select>
 
                 <input name="phone" type="tel" placeholder="Phone number only" autocomplete="tel" inputmode="numeric" required>
@@ -837,10 +832,6 @@
             <div class="phone-row">
               <select name="mobile_code" required>
                 <option value="1" selected>+1 Canada/US</option>
-                <option value="44">+44 UK</option>
-                <option value="91">+91 India</option>
-                <option value="971">+971 UAE</option>
-                <option value="61">+61 Australia</option>
               </select>
 
               <input name="phone" type="tel" placeholder="Phone number only" autocomplete="tel" inputmode="numeric" required>
@@ -971,7 +962,8 @@
       payload.append("name", name);
       payload.append("email", email);
 
-      // Important: no + sign is sent to the sheet.
+      // Phone and mobile code are sent separately.
+      // Phone has no +1 inside it.
       payload.append("phone", phoneDigits);
       payload.append("mobile_code", mobileCodeDigits);
 
